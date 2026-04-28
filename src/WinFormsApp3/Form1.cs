@@ -13,7 +13,7 @@ namespace WinFormsApp3
         {
             this.StartPosition = FormStartPosition.CenterScreen;
             var connectionString = Environment.GetEnvironmentVariable("POSTGRES_CONNECTION_STRING")
-                ?? "Host=localhost;Port=5432;Username=postgres;Password=PAROL12345;Database=forma";
+                ?? "Host=localhost;Port=5432;Username=postgres;Password=12345;Database=forma";
 
             con = new NpgsqlConnection(connectionString);
             con.Open();

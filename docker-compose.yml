@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: forma
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: PAROL12345
+      POSTGRES_PASSWORD: 12345
     ports:
       - "5432:5432"
     volumes:
