@@ -21,7 +21,7 @@ namespace WinFormsApp3
             this.con = con;
             InitializeComponent();
         }
-        public void Update()
+        public void LoadProducts()
         {
             String sql = "Select*from Product";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -37,19 +37,19 @@ namespace WinFormsApp3
 
         private void FormProduct_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadProducts();
         }
 
         private void добавитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AddProductForm f = new AddProductForm(con, -1);
             f.ShowDialog();
-            Update();
+            LoadProducts();
         }
 
         private void удалитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dataGridView1.CurrentRow != null)
+            if (dataGridView1.CurrentRow != null && !dataGridView1.CurrentRow.IsNewRow)
             {
                 int id = (int)dataGridView1.CurrentRow.Cells["id"].Value;
 
@@ -63,9 +63,8 @@ namespace WinFormsApp3
                         NpgsqlCommand command = new NpgsqlCommand("delete from product where id = :id", con);
                         command.Parameters.AddWithValue(":id", id);
                         command.ExecuteNonQuery();
-                        RenumberIds();
 
-                        Update();
+                        LoadProducts();
                     }
                     catch (Exception ex)
                     {
@@ -116,12 +115,18 @@ namespace WinFormsApp3
 
         private void изменитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (dataGridView1.CurrentRow == null || dataGridView1.CurrentRow.IsNewRow)
+            {
+                MessageBox.Show("Выберите строку для изменения!");
+                return;
+            }
+
             int id = (int)dataGridView1.CurrentRow.Cells["ID"].Value;
             string name = (string)dataGridView1.CurrentRow.Cells["name"].Value;
             string ed = (string)dataGridView1.CurrentRow.Cells["ed"].Value;
             AddProductForm f = new AddProductForm(con, id, name, ed);
             f.ShowDialog();
-            Update();
+            LoadProducts();
         }
 
         private void выходToolStripMenuItem_Click(object sender, EventArgs e)

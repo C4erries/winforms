@@ -10,6 +10,14 @@ make run
 
 This starts PostgreSQL first, waits until it is ready, then runs the app.
 
+## Visual Studio
+
+Open `WinFormsApp3.sln` from the project root.
+
+Form files are grouped by folders, but each form still has its `.cs`, `.Designer.cs` and `.resx` files together, so the WinForms designer should open normally.
+
+Files like `.vs/` and `*.csproj.user` are local Visual Studio settings and are ignored by git.
+
 ## Useful Commands
 
 ```powershell

@@ -21,7 +21,7 @@ namespace WinFormsApp3
             InitializeComponent();
             this.con = con;
         }
-        private void Update()
+        private void LoadClients()
         {
             String sql = "Select*from client";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -35,7 +35,7 @@ namespace WinFormsApp3
 
         private void AddFuturaForm_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadClients();
         }
 
         private void buttonNo_Click(object sender, EventArgs e)
@@ -44,6 +44,12 @@ namespace WinFormsApp3
         }
         private void buttonYes_Click(object sender, EventArgs e)
         {
+            if (comboBoxClientName.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите клиента!");
+                return;
+            }
+
             try
             {
                 NpgsqlCommand command = new NpgsqlCommand("INSERT INTO Futura (idClient, data, totalSum) " +

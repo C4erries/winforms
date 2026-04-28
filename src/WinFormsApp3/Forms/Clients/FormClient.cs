@@ -21,7 +21,7 @@ namespace WinFormsApp3
             this.con = con;
             InitializeComponent();
         }
-        public void Update()
+        public void LoadClients()
         {
             String sql = "Select*from Client";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -37,7 +37,7 @@ namespace WinFormsApp3
         }
         private void FormClient_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadClients();
         }
         private void выходToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -48,16 +48,16 @@ namespace WinFormsApp3
         {
             AddClientForm f = new AddClientForm(con, -1);
             f.ShowDialog();
-            Update();
+            LoadClients();
         }
 
         private void удалитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dataGridView1.CurrentRow != null)
+            if (dataGridView1.CurrentRow != null && !dataGridView1.CurrentRow.IsNewRow)
             {
                 int id = (int)dataGridView1.CurrentRow.Cells["id"].Value;
 
-                DialogResult result = MessageBox.Show("Удалить выбранный продукт?", "Подтверждение",
+                DialogResult result = MessageBox.Show("Удалить выбранного клиента?", "Подтверждение",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (result == DialogResult.Yes)
@@ -67,9 +67,8 @@ namespace WinFormsApp3
                         NpgsqlCommand command = new NpgsqlCommand("delete from client where id = :id", con);
                         command.Parameters.AddWithValue(":id", id);
                         command.ExecuteNonQuery();
-                        RenumberIds();
 
-                        Update();
+                        LoadClients();
                     }
                     catch (Exception ex)
                     {
@@ -120,18 +119,24 @@ namespace WinFormsApp3
 
         private void изменитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (dataGridView1.CurrentRow == null || dataGridView1.CurrentRow.IsNewRow)
+            {
+                MessageBox.Show("Выберите строку для изменения!");
+                return;
+            }
+
             int id = (int)dataGridView1.CurrentRow.Cells["ID"].Value;
             string name = (string)dataGridView1.CurrentRow.Cells["name"].Value;
             string adress = (string)dataGridView1.CurrentRow.Cells["address"].Value;
             string phone = (string)dataGridView1.CurrentRow.Cells["phone"].Value;
             AddClientForm f = new AddClientForm(con, id, name, adress, phone);
             f.ShowDialog();
-            Update();
+            LoadClients();
         }
 
         private void FormClient_Load_1(object sender, EventArgs e)
         {
-            Update();
+            LoadClients();
         }
     }
 }

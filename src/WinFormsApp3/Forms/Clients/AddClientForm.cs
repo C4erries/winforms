@@ -49,7 +49,10 @@ namespace WinFormsApp3
                     command.ExecuteNonQuery();
                     Close();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
             else
             {
@@ -63,7 +66,10 @@ namespace WinFormsApp3
                     command.ExecuteNonQuery();
                     Close();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
         }
     }

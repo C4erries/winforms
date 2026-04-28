@@ -17,8 +17,6 @@ namespace WinFormsApp3
         public NpgsqlConnection con;
         DataTable dt = new DataTable();
         DataSet ds = new DataSet();
-        NpgsqlDataReader dr;
-        NpgsqlDataAdapter da;
         public futuraRealizacia(NpgsqlConnection con)
         {
             InitializeComponent();
@@ -29,7 +27,7 @@ namespace WinFormsApp3
         {
 
         }
-        private void Update()
+        private void LoadClients()
         {
             String sql = "Select*from client";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -43,18 +41,23 @@ namespace WinFormsApp3
 
         private void futuraRealizacia_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadClients();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            if (comboBox1.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите клиента!");
+                return;
+            }
 
             string sql = "SELECT Futura.ID, product.name, quantity * price AS cost FROM futura "+
                 "LEFT JOIN futurainfo ON futura.idclient =:idclient AND futurainfo.idfutura = futura.id JOIN Product on product.id = Futurainfo.idproduct";
 
             NpgsqlCommand command = new NpgsqlCommand(sql, con);
             command.Parameters.AddWithValue("idclient", comboBox1.SelectedValue);
-            da = new NpgsqlDataAdapter(command);
+            NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             ds.Reset();
             da.Fill(ds);
             dt = ds.Tables[0];

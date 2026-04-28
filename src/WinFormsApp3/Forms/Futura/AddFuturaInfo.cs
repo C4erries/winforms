@@ -24,7 +24,7 @@ namespace WinFormsApp3
             this.futuraId = futuraId;
         }
 
-        private void Update()
+        private void LoadProducts()
         {
             String sql = "Select*from product";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -38,14 +38,32 @@ namespace WinFormsApp3
 
         private void Yes_Click(object sender, EventArgs e)
         {
+            if (comboBoxProduct.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите товар!");
+                return;
+            }
+
+            if (!decimal.TryParse(textBoxQuantity.Text, out decimal quantity) || quantity <= 0)
+            {
+                MessageBox.Show("Введите корректное количество!");
+                return;
+            }
+
+            if (!decimal.TryParse(textBoxPrice.Text, out decimal price) || price < 0)
+            {
+                MessageBox.Show("Введите корректную цену!");
+                return;
+            }
+
             try
             {
                 NpgsqlCommand command = new NpgsqlCommand("INSERT INTO FuturaInfo (idFutura, idProduct, quantity, price)" +
                     " VALUES (:idFutura, :idProduct, :quantity, :price) RETURNING id", con);
                 command.Parameters.AddWithValue("idFutura", futuraId);
                 command.Parameters.AddWithValue("idProduct", comboBoxProduct.SelectedValue);
-                command.Parameters.AddWithValue("quantity", Convert.ToDouble(textBoxQuantity.Text));
-                command.Parameters.AddWithValue("price", Convert.ToDouble(textBoxPrice.Text));
+                command.Parameters.AddWithValue("quantity", quantity);
+                command.Parameters.AddWithValue("price", price);
                 command.ExecuteNonQuery();
 
                 Close();
@@ -58,7 +76,7 @@ namespace WinFormsApp3
         }
         private void AddFuturaInfo_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadProducts();
         }
         private void buttonNo_Click_1(object sender, EventArgs e)
         {

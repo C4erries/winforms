@@ -24,7 +24,7 @@ namespace WinFormsApp3
             InitializeComponent();
 
         }
-        private void Update()
+        private void LoadFuturas()
         {
             String sql = "Select futura.ID,futura.data,client.name FROM futura JOIN client ON futura.IDclient=client.ID";
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
@@ -37,12 +37,32 @@ namespace WinFormsApp3
         private void Update2(int futuraId)
         {
             string sql = @"SELECT fi.id, p.name AS Товар, p.ed AS Ед_изм, fi.quantity AS Количество,
-           fi.price AS Цена FROM FuturaInfo fi JOIN Product p ON fi.idProduct = p.id WHERE fi.idFutura = " + futuraId;
-            NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, con);
+           fi.price AS Цена FROM FuturaInfo fi JOIN Product p ON fi.idProduct = p.id WHERE fi.idFutura = :idFutura";
+            NpgsqlCommand command = new NpgsqlCommand(sql, con);
+            command.Parameters.AddWithValue("idFutura", futuraId);
+            NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             DataTable dt2 = new DataTable();
 
             da.Fill(dt2);
             dataGridView2.DataSource = dt2;
+        }
+
+        private bool TryGetSelectedFuturaId(out int id)
+        {
+            id = 0;
+            if (dataGridView1.CurrentRow == null || dataGridView1.CurrentRow.IsNewRow)
+            {
+                return false;
+            }
+
+            if (dataGridView1.CurrentRow.Cells["ID"].Value is int value)
+            {
+                futuraId = value;
+                id = futuraId;
+                return true;
+            }
+
+            return false;
         }
 
         private void выходToolStripMenuItem_Click(object sender, EventArgs e)
@@ -52,7 +72,7 @@ namespace WinFormsApp3
 
         private void FormFutura_Load(object sender, EventArgs e)
         {
-            Update();
+            LoadFuturas();
             Update2(0);
         }
 
@@ -60,12 +80,17 @@ namespace WinFormsApp3
         {
             AddFuturaForm f = new AddFuturaForm(con);
             f.ShowDialog();
-            Update();
+            LoadFuturas();
         }
 
         private void товарToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            int Id = (int)dataGridView1.CurrentRow.Cells["ID"].Value;
+            if (!TryGetSelectedFuturaId(out int Id))
+            {
+                MessageBox.Show("Выберите накладную!");
+                return;
+            }
+
             AddFuturaInfo f = new AddFuturaInfo(con, Id);
             f.ShowDialog();
             Update2(Id);
@@ -73,21 +98,25 @@ namespace WinFormsApp3
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            int Id = (int)dataGridView1.CurrentRow.Cells["ID"].Value;
-            Update2(Id);
+            if (TryGetSelectedFuturaId(out int Id))
+            {
+                Update2(Id);
+            }
         }
 
         private void наклоднаяToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             AddFuturaForm f = new AddFuturaForm(con);
             f.ShowDialog();
-            Update();
+            LoadFuturas();
         }
 
         private void dataGridView1_SelectionChanged(object sender, EventArgs e)
         {
-            int Id = (int)dataGridView1.CurrentRow.Cells["ID"].Value;
-            Update2(Id);
+            if (TryGetSelectedFuturaId(out int Id))
+            {
+                Update2(Id);
+            }
         }
     }
 }

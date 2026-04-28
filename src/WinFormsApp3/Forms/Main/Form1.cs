@@ -8,7 +8,7 @@ namespace WinFormsApp3
         {
             InitializeComponent();
         }
-        public NpgsqlConnection con;
+        public NpgsqlConnection con = null!;
         public void MyLoad()
         {
             this.StartPosition = FormStartPosition.CenterScreen;
