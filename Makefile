@@ -1,6 +1,9 @@
 PROJECT=src/WinFormsApp3
+DB_CONTAINER=winforms-postgres
+DB_NAME=forma
+DB_USER=postgres
 
-.PHONY: db run build down reset-db logs psql clean
+.PHONY: db seed run build down reset-db reset-db-seed logs psql clean
 
 db:
 	docker compose up -d --wait postgres
@@ -18,11 +21,16 @@ reset-db:
 	docker compose down -v
 	docker compose up -d --wait postgres
 
+seed: db
+	docker exec -i -e PGPASSWORD=12345 $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/seed.sql
+
+reset-db-seed: reset-db seed
+
 logs:
 	docker compose logs -f postgres
 
 psql:
-	docker exec -it -e PGPASSWORD=12345 winforms-postgres psql -U postgres -d forma
+	docker exec -it -e PGPASSWORD=12345 $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME)
 
 clean:
 	dotnet clean WinFormsApp3.sln
