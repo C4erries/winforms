@@ -26,3 +26,16 @@ Default database connection:
 ```text
 Host=localhost;Port=5432;Username=postgres;Password=12345;Database=forma
 ```
+
+## Structure
+
+```text
+src/WinFormsApp3/
+  Program.cs
+  Forms/
+    Main/
+    Clients/
+    Products/
+    Futura/
+    Reports/
+```
