@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: winforms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: forma
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PAROL12345
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db.sql:/docker-entrypoint-initdb.d/01-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d forma"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
