@@ -1,4 +1,5 @@
 using System.Data;
+using System.Drawing.Drawing2D;
 using Npgsql;
 using StationeryStore.Data;
 using StationeryStore.Services;
@@ -13,7 +14,7 @@ public sealed class ReportsTabPage : TabPage
     private readonly DateTimePicker _to = new() { Format = DateTimePickerFormat.Short, Width = 120 };
     private readonly DataGridView _movementGrid = new() { Dock = DockStyle.Fill };
     private readonly DataGridView _debtGrid = new() { Dock = DockStyle.Bottom, Height = 190 };
-    private readonly Panel _chart = new() { Dock = DockStyle.Right, Width = 360, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+    private readonly Panel _chart = new() { Dock = DockStyle.Right, Width = 380, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
     private DataTable _lastDebt = new();
 
     public ReportsTabPage(Db db)
@@ -98,17 +99,20 @@ public sealed class ReportsTabPage : TabPage
     {
         _lastDebt = _db.Query("""
             SELECT d::date AS "Дата",
-                   COALESCE((
-                       SELECT SUM(i.total_sum)
-                       FROM invoice i
-                       WHERE i.invoice_type = 'income' AND i.invoice_date <= d
-                   ), 0)
-                   - COALESCE((
-                       SELECT SUM(p.amount)
-                       FROM payment p
-                       JOIN invoice i ON i.id = p.invoice_id
-                       WHERE i.invoice_type = 'income' AND p.payment_date <= d
-                   ), 0) AS "Задолженность"
+                   GREATEST(
+                       COALESCE((
+                           SELECT SUM(i.total_sum)
+                           FROM invoice i
+                           WHERE i.invoice_type = 'income' AND i.invoice_date <= d
+                       ), 0)
+                       - COALESCE((
+                           SELECT SUM(p.amount)
+                           FROM payment p
+                           JOIN invoice i ON i.id = p.invoice_id
+                           WHERE i.invoice_type = 'income' AND p.payment_date <= d
+                       ), 0),
+                       0
+                   ) AS "Задолженность"
             FROM generate_series(@from::date, @to::date, interval '1 day') d
             ORDER BY d
             """,
@@ -139,6 +143,7 @@ public sealed class ReportsTabPage : TabPage
 
     private void PaintChart(object? sender, PaintEventArgs e)
     {
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.Clear(Color.White);
         if (_lastDebt.Rows.Count == 0)
         {
@@ -156,7 +161,7 @@ public sealed class ReportsTabPage : TabPage
             return;
         }
 
-        var rect = new Rectangle(40, 50, 240, 240);
+        var rect = new Rectangle(90, 45, 200, 200);
         var colors = new[] { Color.SteelBlue, Color.Orange, Color.ForestGreen, Color.IndianRed, Color.MediumPurple, Color.Goldenrod };
         decimal start = 0;
         for (var i = 0; i < values.Count; i++)
@@ -164,9 +169,54 @@ public sealed class ReportsTabPage : TabPage
             var sweep = values[i] / total * 360;
             using var brush = new SolidBrush(colors[i % colors.Length]);
             e.Graphics.FillPie(brush, rect, (float)start, (float)sweep);
+            e.Graphics.DrawPie(Pens.White, rect, (float)start, (float)sweep);
             start += sweep;
         }
-        e.Graphics.DrawString("Задолженность по дням", Font, Brushes.Black, 80, 20);
+
+        e.Graphics.DrawString("Задолженность по дням", new Font(Font, FontStyle.Bold), Brushes.Black, 20, 20);
+        DrawDebtLegend(e.Graphics, values, total, colors);
+    }
+
+    private void DrawDebtLegend(Graphics graphics, List<decimal> values, decimal total, Color[] colors)
+    {
+        var legendX = 18;
+        var legendY = 270;
+        var rowHeight = 22;
+        var columnWidth = 178;
+        var rowsPerColumn = 9;
+        var maxItems = Math.Min(values.Count, rowsPerColumn * 2);
+
+        for (var i = 0; i < maxItems; i++)
+        {
+            var row = _lastDebt.Rows[i];
+            var date = FormatReportDate(row["Дата"]);
+            var amount = values[i];
+            var percent = amount / total * 100;
+            var column = i / rowsPerColumn;
+            var rowIndex = i % rowsPerColumn;
+            var x = legendX + column * columnWidth;
+            var y = legendY + rowIndex * rowHeight;
+
+            using var brush = new SolidBrush(colors[i % colors.Length]);
+            graphics.FillRectangle(brush, x, y + 3, 12, 12);
+            graphics.DrawRectangle(Pens.Gray, x, y + 3, 12, 12);
+            graphics.DrawString($"{date}: {amount:0} ({percent:0.#}%)", Font, Brushes.Black, x + 18, y);
+        }
+
+        if (values.Count > maxItems)
+        {
+            graphics.DrawString($"Еще дней: {values.Count - maxItems}", Font, Brushes.DimGray, legendX, legendY + rowsPerColumn * rowHeight + 4);
+        }
+    }
+
+    private static string FormatReportDate(object value)
+    {
+        return value switch
+        {
+            DateOnly date => date.ToString("dd.MM"),
+            DateTime date => date.ToString("dd.MM"),
+            _ => value.ToString() ?? ""
+        };
     }
 
     private sealed class GroupItem
