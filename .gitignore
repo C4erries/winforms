@@ -1,0 +1,14 @@
+.vs/
+.vscode/
+
+bin/
+obj/
+
+*.user
+*.suo
+*.rsuser
+
+TestResults/
+*.nupkg
+
+.env
