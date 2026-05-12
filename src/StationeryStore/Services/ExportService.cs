@@ -21,7 +21,7 @@ public static class ExportService
     public static void ExportInvoiceToWord(Db db, int invoiceId, string fileName)
     {
         var invoice = db.Query("""
-            SELECT i.number, i.invoice_date, i.invoice_type, i.total_sum,
+            SELECT i.number, i.invoice_date::timestamp AS invoice_date, i.invoice_type, i.total_sum,
                    s.name AS supplier_name, s.address, s.phone
             FROM invoice i
             JOIN supplier s ON s.id = i.supplier_id
