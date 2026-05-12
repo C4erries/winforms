@@ -98,25 +98,33 @@ public sealed class ReportsTabPage : TabPage
     private void BuildDebt()
     {
         _lastDebt = _db.Query("""
-            SELECT d::date AS "Дата",
-                   GREATEST(
-                       COALESCE((
-                           SELECT SUM(i.total_sum)
-                           FROM invoice i
-                           WHERE i.invoice_type = 'income' AND i.invoice_date <= d
-                       ), 0)
-                       - COALESCE((
-                           SELECT SUM(p.amount)
-                           FROM payment p
-                           JOIN invoice i ON i.id = p.invoice_id
-                           WHERE i.invoice_type = 'income' AND p.payment_date <= d
-                       ), 0),
-                       0
-                   ) AS "Задолженность"
-            FROM generate_series(@from::date, @to::date, interval '1 day') d
-            ORDER BY d
+            WITH supplier_debt AS (
+                SELECT s.name,
+                       GREATEST(
+                           COALESCE((
+                               SELECT SUM(i.total_sum)
+                               FROM invoice i
+                               WHERE i.supplier_id = s.id
+                                 AND i.invoice_type = 'income'
+                                 AND i.invoice_date <= @to
+                           ), 0)
+                           - COALESCE((
+                               SELECT SUM(p.amount)
+                               FROM payment p
+                               JOIN invoice i ON i.id = p.invoice_id
+                               WHERE i.supplier_id = s.id
+                                 AND i.invoice_type = 'income'
+                                 AND p.payment_date <= @to
+                           ), 0),
+                           0
+                       ) AS debt
+                FROM supplier s
+            )
+            SELECT name AS "Поставщик", debt AS "Задолженность"
+            FROM supplier_debt
+            WHERE debt > 0
+            ORDER BY debt DESC, name
             """,
-            new NpgsqlParameter("from", _from.Value.Date),
             new NpgsqlParameter("to", _to.Value.Date));
         _debtGrid.DataSource = _lastDebt;
         _chart.Invalidate();
@@ -173,7 +181,7 @@ public sealed class ReportsTabPage : TabPage
             start += sweep;
         }
 
-        e.Graphics.DrawString("Задолженность по дням", new Font(Font, FontStyle.Bold), Brushes.Black, 20, 20);
+        e.Graphics.DrawString("Задолженность по поставщикам", new Font(Font, FontStyle.Bold), Brushes.Black, 20, 20);
         DrawDebtLegend(e.Graphics, values, total, colors);
     }
 
@@ -189,7 +197,7 @@ public sealed class ReportsTabPage : TabPage
         for (var i = 0; i < maxItems; i++)
         {
             var row = _lastDebt.Rows[i];
-            var date = FormatReportDate(row["Дата"]);
+            var supplier = row["Поставщик"].ToString() ?? "";
             var amount = values[i];
             var percent = amount / total * 100;
             var column = i / rowsPerColumn;
@@ -200,23 +208,13 @@ public sealed class ReportsTabPage : TabPage
             using var brush = new SolidBrush(colors[i % colors.Length]);
             graphics.FillRectangle(brush, x, y + 3, 12, 12);
             graphics.DrawRectangle(Pens.Gray, x, y + 3, 12, 12);
-            graphics.DrawString($"{date}: {amount:0} ({percent:0.#}%)", Font, Brushes.Black, x + 18, y);
+            graphics.DrawString($"{supplier}: {amount:0} ({percent:0.#}%)", Font, Brushes.Black, x + 18, y);
         }
 
         if (values.Count > maxItems)
         {
-            graphics.DrawString($"Еще дней: {values.Count - maxItems}", Font, Brushes.DimGray, legendX, legendY + rowsPerColumn * rowHeight + 4);
+            graphics.DrawString($"Еще поставщиков: {values.Count - maxItems}", Font, Brushes.DimGray, legendX, legendY + rowsPerColumn * rowHeight + 4);
         }
-    }
-
-    private static string FormatReportDate(object value)
-    {
-        return value switch
-        {
-            DateOnly date => date.ToString("dd.MM"),
-            DateTime date => date.ToString("dd.MM"),
-            _ => value.ToString() ?? ""
-        };
     }
 
     private sealed class GroupItem
