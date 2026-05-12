@@ -46,7 +46,8 @@ public sealed class InvoiceTabPage : TabPage
             SELECT i.id, i.number AS "Номер", i.invoice_date AS "Дата",
                    CASE WHEN i.invoice_type = 'income' THEN 'Приходная' ELSE 'Расходная' END AS "Тип",
                    i.invoice_type, i.supplier_id, s.name AS "Поставщик",
-                   i.note AS "Примечание", i.total_sum AS "Сумма"
+                   i.note AS "Примечание", i.total_sum AS "Сумма",
+                   i.current_debt AS "Задолженность"
             FROM invoice i
             JOIN supplier s ON s.id = i.supplier_id
             ORDER BY i.invoice_date DESC, i.id DESC

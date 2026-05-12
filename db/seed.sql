@@ -36,19 +36,19 @@ INSERT INTO supplier (name, address, phone) VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO invoice (supplier_id, number, invoice_date, invoice_type, note)
-SELECT s.id, 'ПР-001', DATE '2026-04-01', 'income', 'Первая поставка бумаги и ручек'
+SELECT s.id, 'ПР-001', DATE '2026-05-02', 'income', 'Первая поставка бумаги и ручек'
 FROM supplier s
 WHERE s.name = 'ООО КанцПоставка'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO invoice (supplier_id, number, invoice_date, invoice_type, note)
-SELECT s.id, 'ПР-002', DATE '2026-04-06', 'income', 'Поставка папок и настольных принадлежностей'
+SELECT s.id, 'ПР-002', DATE '2026-05-06', 'income', 'Поставка папок и настольных принадлежностей'
 FROM supplier s
 WHERE s.name = 'ООО ОфисМаркет'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO invoice (supplier_id, number, invoice_date, invoice_type, note)
-SELECT s.id, 'РС-001', DATE '2026-04-10', 'expense', 'Реализация товаров покупателям'
+SELECT s.id, 'РС-001', DATE '2026-05-09', 'expense', 'Реализация товаров покупателям'
 FROM supplier s
 WHERE s.name = 'ИП Смирнов'
 ON CONFLICT DO NOTHING;
@@ -117,25 +117,25 @@ WHERE i.number = 'РС-001' AND i.invoice_type = 'expense'
   );
 
 INSERT INTO payment (invoice_id, payment_date, amount, note)
-SELECT i.id, DATE '2026-04-03', 8000.00, 'Первый платеж по накладной ПР-001'
+SELECT i.id, DATE '2026-05-04', 8000.00, 'Первый платеж по накладной ПР-001'
 FROM invoice i
 WHERE i.number = 'ПР-001' AND i.invoice_type = 'income'
   AND NOT EXISTS (
-      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-04-03'
+      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-05-04'
   );
 
 INSERT INTO payment (invoice_id, payment_date, amount, note)
-SELECT i.id, DATE '2026-04-12', 4000.00, 'Второй платеж по накладной ПР-001'
+SELECT i.id, DATE '2026-05-10', 4000.00, 'Второй платеж по накладной ПР-001'
 FROM invoice i
 WHERE i.number = 'ПР-001' AND i.invoice_type = 'income'
   AND NOT EXISTS (
-      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-04-12'
+      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-05-10'
   );
 
 INSERT INTO payment (invoice_id, payment_date, amount, note)
-SELECT i.id, DATE '2026-04-15', 5000.00, 'Частичная оплата накладной ПР-002'
+SELECT i.id, DATE '2026-05-12', 5000.00, 'Частичная оплата накладной ПР-002'
 FROM invoice i
 WHERE i.number = 'ПР-002' AND i.invoice_type = 'income'
   AND NOT EXISTS (
-      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-04-15'
+      SELECT 1 FROM payment p WHERE p.invoice_id = i.id AND p.payment_date = DATE '2026-05-12'
   );
