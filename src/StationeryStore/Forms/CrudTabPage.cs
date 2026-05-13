@@ -11,6 +11,7 @@ public sealed class CrudTabPage : TabPage
     private readonly string _selectSql;
     private readonly Action<EditRecordForm, DataRow?> _buildForm;
     private readonly Func<EditRecordForm, int?, (string Sql, NpgsqlParameter[] Parameters)> _saveCommand;
+    private readonly Func<EditRecordForm, int?, bool>? _validateSave;
     private readonly string _deleteSql;
     private readonly DataGridView _grid = new() { Dock = DockStyle.Fill };
 
@@ -20,7 +21,8 @@ public sealed class CrudTabPage : TabPage
         string selectSql,
         Action<EditRecordForm, DataRow?> buildForm,
         Func<EditRecordForm, int?, (string Sql, NpgsqlParameter[] Parameters)> saveCommand,
-        string deleteSql)
+        string deleteSql,
+        Func<EditRecordForm, int?, bool>? validateSave = null)
     {
         Text = title;
         UiStyles.ApplyPage(this);
@@ -29,6 +31,7 @@ public sealed class CrudTabPage : TabPage
         _selectSql = selectSql;
         _buildForm = buildForm;
         _saveCommand = saveCommand;
+        _validateSave = validateSave;
         _deleteSql = deleteSql;
 
         var buttons = UiStyles.ButtonPanel();
@@ -80,15 +83,20 @@ public sealed class CrudTabPage : TabPage
         var form = new EditRecordForm(row == null ? "Добавление" : "Изменение");
         _buildForm(form, row);
         form.BuildButtons();
-        if (form.ShowDialog(this) != DialogResult.OK)
+        while (form.ShowDialog(this) == DialogResult.OK)
         {
+            var id = row == null ? (int?)null : Convert.ToInt32(row["id"]);
+            if (_validateSave?.Invoke(form, id) == false)
+            {
+                form.DialogResult = DialogResult.None;
+                continue;
+            }
+
+            var command = _saveCommand(form, id);
+            _db.Execute(command.Sql, command.Parameters);
+            LoadData();
             return;
         }
-
-        var id = row == null ? (int?)null : Convert.ToInt32(row["id"]);
-        var command = _saveCommand(form, id);
-        _db.Execute(command.Sql, command.Parameters);
-        LoadData();
     }
 
     private void DeleteSelected()

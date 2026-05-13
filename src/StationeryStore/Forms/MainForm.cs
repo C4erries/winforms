@@ -124,6 +124,38 @@ public sealed class MainForm : Form
             (form, id) => id == null
                 ? ("INSERT INTO payment(invoice_id, payment_date, amount, note) VALUES(@invoice_id, @payment_date, @amount, @note)", new[] { new NpgsqlParameter("invoice_id", form.LookupId("invoice_id")), new NpgsqlParameter("payment_date", form.DateValue("payment_date")), new NpgsqlParameter("amount", form.DecimalValue("amount")), new NpgsqlParameter("note", form.TextValue("note")) })
                 : ("UPDATE payment SET invoice_id = @invoice_id, payment_date = @payment_date, amount = @amount, note = @note WHERE id = @id", new[] { new NpgsqlParameter("invoice_id", form.LookupId("invoice_id")), new NpgsqlParameter("payment_date", form.DateValue("payment_date")), new NpgsqlParameter("amount", form.DecimalValue("amount")), new NpgsqlParameter("note", form.TextValue("note")), new NpgsqlParameter("id", id.Value) }),
-            "DELETE FROM payment WHERE id = @id");
+            "DELETE FROM payment WHERE id = @id",
+            ValidatePaymentAmount);
+    }
+
+    private bool ValidatePaymentAmount(EditRecordForm form, int? paymentId)
+    {
+        var invoiceId = form.LookupId("invoice_id");
+        var amount = form.DecimalValue("amount");
+        var maxAmount = Convert.ToDecimal(_db.Scalar("""
+            SELECT COALESCE(i.current_debt, 0) +
+                   COALESCE((
+                       SELECT p.amount
+                       FROM payment p
+                       WHERE p.id = @payment_id
+                         AND p.invoice_id = i.id
+                   ), 0)
+            FROM invoice i
+            WHERE i.id = @invoice_id
+            """,
+            new NpgsqlParameter("invoice_id", invoiceId),
+            new NpgsqlParameter("payment_id", (object?)paymentId ?? DBNull.Value)) ?? 0);
+
+        if (amount <= maxAmount)
+        {
+            return true;
+        }
+
+        MessageBox.Show(
+            $"Сумма платежа не может быть больше задолженности.\nМаксимум можно заплатить: {maxAmount:N2}",
+            "Ошибка",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error);
+        return false;
     }
 }
